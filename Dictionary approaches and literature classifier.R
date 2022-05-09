@@ -11,7 +11,7 @@ library(quanteda.corpora)
 library(lubridate)
 library(caret)
 
-# read data frame and create simpler version
+# load data frame 
 df <- read_excel("H:\\Meta-Rep\\R Code\\Lit Classifier\\Data\\CODE.xlsx")
 df <- data.frame(doc_id=row.names(df),
            text=df$Abstract, relevant = df$included)
@@ -35,7 +35,7 @@ scores <- corp_review  %>%
   mutate(sent = pos - neg)
 head(scores)
 
-# accuracy/precision helper function
+##### accuracy/precision helper function
 error_metric=function(CM)
 {
   TN =CM[1,1]
@@ -50,8 +50,9 @@ error_metric=function(CM)
   print(paste("Recall of the model: ",round(recall,3)))
 }
 
-#######
-# for loop for model transparency, varying parameter is the sent cutoff value
+#####
+
+# for loop for model transparency, varying parameter is the sentiment cutoff value
 values <- seq(from = -5, to = 5)
 # -5 to 5 since around 70-80% of the distribution falls in between see hist(scores$sent)
 
@@ -74,6 +75,8 @@ poswords_list <- c("agent-based", "analytics", "automated", "computational", "co
                    "digital", "digitalized", "language", "learning", "machine", "method", "methods", "methodology", "mining", "model",
                    "model-based", "models", "modeling", "network", "quantitative", "semantic", "semi-automated", "sentiment", 
                    "supervised", "Twitter", "topic", "unsupervised")
+
+# subjective weightinga
 pos_weights <- c(1, 1, 1, 5, 5, 1, 3, 1, 1, 1, 1, 3, 1, 1, 1, 3, 1, 3, 1, 3, 5, 5, 3, 5, 5, 5, 1, 3, 5)
 names(pos_weights) <- poswords_list
 
@@ -103,6 +106,8 @@ for (i in values) {
   error_metric(CM)
   print(paste("________________"))
 }
+
+# weighting definitely improves accuracy measures
 
 # 3. Text statistics and other shenanigans
 # 3.1 clear stopwords
@@ -139,7 +144,6 @@ textplot_wordcloud(dfmat_reviews, max_words = 100)
 tstat_key <- textstat_keyness(dfmat_reviews)
 textplot_keyness(tstat_key)
 
-
 # 4. Supervised ML model
 dfm_train <- corp_review %>% 
   tokens() %>%
@@ -160,13 +164,13 @@ for (label in c("pos", "neg")) {
     Recall=Recall(actual, predicted, label),
     F1=F1_Score(actual, predicted, label))
 }
-bind_rows(results, .id="label")  
 
 CM <- table(predicted, actual)
 
 error_metric(CM)
 
 # out of sample
+# currently not possible since we have no out of test data
 
 df_test <- read_excel("H:\\Meta-Rep\\R Code\\Lit Classifier\\Data\\CODE.xlsx")
 df_test <- data.frame(doc_id=row.names(df),
@@ -175,6 +179,13 @@ df_test <- data.frame(doc_id=row.names(df),
 
 
 
+
+
+###################################################
+###################################################
+# Old code
+
+# make dfm, remove stopwords, create raw counts of pos words  
 
 #plot dtm frequency
 dfmat_reviews %>% 
@@ -193,12 +204,6 @@ dfmat_reviews <- dfm(toks_reviews) %>%
 tstat_dist <- as.dist(textstat_dist(dfmat_reviews))
 clust <- hclust(tstat_dist)
 plot(clust, xlab = "Distance", ylab = NULL)
-
-###################################################
-###################################################
-# Old code
-
-# make dfm, remove stopwords, create raw counts of pos words  
 
 toks_reviews <- tokens(corp_review, remove_punct = TRUE)
 dfmat_reviews <- dfm(toks_reviews) %>%
